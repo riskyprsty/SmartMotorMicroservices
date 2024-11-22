@@ -17,7 +17,7 @@ export const getVehicleStatus = async (vehicleId) => {
         }
     }
     catch (e) {
-        console.log('Error retrieving motor status from firebase RTDB');
+        console.log('Error retrieving motor status from firebase RTDB', e);
     }
 };
 export const isUserInitialized = async (jid) => {

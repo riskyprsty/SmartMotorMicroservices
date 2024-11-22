@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, set, get } from 'firebase/database';
-import firebaseConfig from '../../firebaseConfig.json' assert {type: 'json'};
+import firebaseConfig from '../../firebaseConfig.json' assert { type: 'json' };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
@@ -18,7 +18,7 @@ export const getVehicleStatus = async (vehicleId: string) => {
       return null;
     }
   } catch (e) {
-    console.log('Error retrieving motor status from firebase RTDB');
+    console.log('Error retrieving motor status from firebase RTDB', e);
   }
 };
 

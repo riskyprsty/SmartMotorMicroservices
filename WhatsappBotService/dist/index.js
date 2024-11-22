@@ -24,7 +24,6 @@ store?.readFromFile('./auth/baileys_store_multi.json');
 setInterval(() => {
     store?.writeToFile('./auth/baileys_store_multi.json');
 }, 10_000);
-62;
 // start a connection
 const startSock = async () => {
     const { state, saveCreds } = await useMultiFileAuthState('auth/baileys_auth_info');

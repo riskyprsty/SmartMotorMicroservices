@@ -57,6 +57,7 @@ export const formatVehicleLocation = async (
 
     return locationformat;
   } catch (e) {
+    console.log(e);
     return [];
   }
 };
@@ -68,12 +69,13 @@ export const formatVehicleStatusMessage = async (
     const vehicleStatus = await getVehicleStatus(vehicleId);
     const relayStatus = vehicleStatus.master_switch.value ? 'nyala' : 'mati';
     const locationTimestamp = new Date(vehicleStatus.location.timestamp * 1000);
-    const locationParseTimestamp = `_Terakhir diupdate: ${locationTimestamp.toLocaleString("id-ID")}_`
+    const locationParseTimestamp = `_Terakhir diupdate: ${locationTimestamp.toLocaleString('id-ID')}_`;
 
     const message = `Halo, status perangkat untuk motor *${vehicleId}*\n\n*--- Electricity ---*\n*Voltase*: ${vehicleStatus.electricity.voltage}V\n\n*---- Modem ---*\n*Operator*: ${vehicleStatus.modem.operator}\n*Kekuatan Signal*: ${vehicleStatus.modem.signal_strength} dBm\n*IP Address*: ${vehicleStatus.modem.ip_address}\n*IMEI*: ${vehicleStatus.modem.IMEI}\n*IMSI*: ${vehicleStatus.modem.IMSI}\n\n*--- Status Relay ---*\n*Switch Kontak*: ${relayStatus.toUpperCase()}\n\n*---- Status GPS ----*\n*Latitude*: ${vehicleStatus.location.lat}\n*Longitude*: ${vehicleStatus.location.lng}\n- ${locationParseTimestamp}`;
 
     return message;
   } catch (e) {
+    console.log(e);
     return 'Error when getting Vehicle Status';
   }
 };
