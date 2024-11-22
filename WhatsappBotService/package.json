@@ -28,7 +28,6 @@
   "dependencies": {
     "@hapi/boom": "^10.0.1",
     "@whiskeysockets/baileys": "^6.7.9",
-    "baileys": "github:WhiskeySockets/Baileys",
     "firebase": "^11.0.2",
     "globals": "^15.12.0",
     "node-cache": "^5.1.2",
