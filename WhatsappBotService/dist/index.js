@@ -2,7 +2,6 @@ import NodeCache from 'node-cache';
 import readline from 'readline';
 import { makeWASocket, DisconnectReason, fetchLatestBaileysVersion, getAggregateVotesInPollMessage, makeCacheableSignalKeyStore, makeInMemoryStore, useMultiFileAuthState, } from '@whiskeysockets/baileys';
 import Proto from '@whiskeysockets/baileys/WAProto/index.js';
-//import MAIN_LOGGER from '../src/Utils/logger'
 import P from 'pino';
 import { handleMessage } from './handlers/handleMessage.js';
 const { proto } = Proto;
@@ -16,15 +15,11 @@ const rl = readline.createInterface({
     output: process.stdout,
 });
 const question = (text) => new Promise((resolve) => rl.question(text, resolve));
-// the store maintains the data of the WA connection in memory
-// can be written out to a file & read from it
 const store = useStore ? makeInMemoryStore({ logger }) : undefined;
 store?.readFromFile('./auth/baileys_store_multi.json');
-// save every 10s
 setInterval(() => {
     store?.writeToFile('./auth/baileys_store_multi.json');
 }, 10_000);
-// start a connection
 const startSock = async () => {
     const { state, saveCreds } = await useMultiFileAuthState('auth/baileys_auth_info');
     // fetch latest version of WA Web
@@ -113,7 +108,10 @@ const startSock = async () => {
                                 await handleMessage(text, msg.pushName, msg.key.remoteJid, sock);
                             }
                             catch (err) {
-                                console.error('Error processing message:', { err, text });
+                                console.error('Error processing message:', {
+                                    err,
+                                    text,
+                                });
                             }
                         }
                     }
@@ -151,7 +149,9 @@ const startSock = async () => {
                 if (typeof contact.imgUrl !== 'undefined') {
                     const newUrl = contact.imgUrl === null
                         ? null
-                        : await sock.profilePictureUrl(contact.id).catch(() => null);
+                        : await sock
+                            .profilePictureUrl(contact.id)
+                            .catch(() => null);
                     console.log(`contact ${contact.id} has a new profile pic: ${newUrl}`);
                 }
             }

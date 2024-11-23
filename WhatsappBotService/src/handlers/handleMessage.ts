@@ -1,144 +1,144 @@
 import { WASocket } from '@whiskeysockets/baileys';
 import { sendMessageWTyping } from '../utils/messageUtils.js';
 import {
-  isUserInitialized,
-  initializeUser,
-  getUserVehicleId,
+   isUserInitialized,
+   initializeUser,
+   getUserVehicleId,
 } from '../services/firebaseService.js';
 
 import {
-  formatVehicleLocation,
-  formatVehicleStatusMessage,
-  helpMessage,
-  initializeExampleMessage,
-  successInitializeMessage,
-  unitializedMessage,
+   formatVehicleLocation,
+   formatVehicleStatusMessage,
+   helpMessage,
+   initializeExampleMessage,
+   successInitializeMessage,
+   unitializedMessage,
 } from '../messages/messageComposer.js';
 
 // Command handlers
 const commands: {
-  [key: string]: (
-    sock: WASocket,
-    jid: string,
-    username: string,
-    args: string[],
-  ) => Promise<void>;
+   [key: string]: (
+      sock: WASocket,
+      jid: string,
+      username: string,
+      args: string[],
+   ) => Promise<void>;
 } = {
-  init: async (sock, jid, senderName, args) => {
-    const vehicleId = args[0];
+   init: async (sock, jid, senderName, args) => {
+      const vehicleId = args[0];
 
-    if (!vehicleId) {
+      if (!vehicleId) {
+         await sendMessageWTyping(
+            sock,
+            {
+               text: initializeExampleMessage(),
+            },
+            jid,
+         );
+         return;
+      }
+
+      await initializeUser(jid, vehicleId);
+
+      const message = await successInitializeMessage(senderName, vehicleId);
       await sendMessageWTyping(
-        sock,
-        {
-          text: initializeExampleMessage(),
-        },
-        jid,
+         sock,
+         {
+            text: message,
+         },
+         jid,
       );
-      return;
-    }
+   },
+   help: async (sock, jid, username) => {
+      const [context, formattedMessage] = await helpMessage(username);
 
-    await initializeUser(jid, vehicleId);
+      await sendMessageWTyping(
+         sock,
+         {
+            text: formattedMessage,
+            contextInfo: context,
+         },
+         jid,
+      );
+   },
+   test: async (sock, jid) => {
+      await sendMessageWTyping(sock, { text: 'Hello test!' }, jid);
+   },
+   cik: async (sock, jid) => {
+      await sendMessageWTyping(sock, { text: 'Hello cak!' }, jid);
+   },
+   location: async (sock, jid) => {
+      const vehicleId = await getUserVehicleId(jid);
+      await sendMessageWTyping(
+         sock,
+         { location: await formatVehicleLocation(vehicleId!) },
+         jid,
+      );
+   },
+   status: async (sock, jid) => {
+      const vehicleId = await getUserVehicleId(jid);
 
-    const message = await successInitializeMessage(senderName, vehicleId);
-    await sendMessageWTyping(
-      sock,
-      {
-        text: message,
-      },
-      jid,
-    );
-  },
-  help: async (sock, jid, username) => {
-    const [context, formattedMessage] = await helpMessage(username);
-
-    await sendMessageWTyping(
-      sock,
-      {
-        text: formattedMessage,
-        contextInfo: context,
-      },
-      jid,
-    );
-  },
-  test: async (sock, jid) => {
-    await sendMessageWTyping(sock, { text: 'Hello test!' }, jid);
-  },
-  cik: async (sock, jid) => {
-    await sendMessageWTyping(sock, { text: 'Hello cak!' }, jid);
-  },
-  location: async (sock, jid) => {
-    const vehicleId = await getUserVehicleId(jid);
-    await sendMessageWTyping(
-      sock,
-      { location: await formatVehicleLocation(vehicleId!) },
-      jid,
-    );
-  },
-  status: async (sock, jid) => {
-    const vehicleId = await getUserVehicleId(jid);
-
-    await sendMessageWTyping(
-      sock,
-      { text: await formatVehicleStatusMessage(vehicleId!) },
-      jid,
-    );
-  },
+      await sendMessageWTyping(
+         sock,
+         { text: await formatVehicleStatusMessage(vehicleId!) },
+         jid,
+      );
+   },
 };
 
 export const commandMiddleware = async (
-  sock: WASocket,
-  jid: string,
-  command: string,
-  username: string,
-  args: string[],
-  handler: (
-    sock: WASocket,
-    jid: string,
-    username: string,
-    args: string[],
-  ) => Promise<void>,
+   sock: WASocket,
+   jid: string,
+   command: string,
+   username: string,
+   args: string[],
+   handler: (
+      sock: WASocket,
+      jid: string,
+      username: string,
+      args: string[],
+   ) => Promise<void>,
 ) => {
-  if (command !== 'init') {
-    const isInitialized = await isUserInitialized(jid);
-    if (!isInitialized) {
-      await sendMessageWTyping(
-        sock,
-        {
-          text: unitializedMessage(),
-        },
-        jid,
-      );
-      return;
-    }
-  }
+   if (command !== 'init') {
+      const isInitialized = await isUserInitialized(jid);
+      if (!isInitialized) {
+         await sendMessageWTyping(
+            sock,
+            {
+               text: unitializedMessage(),
+            },
+            jid,
+         );
+         return;
+      }
+   }
 
-  await handler(sock, jid, username, args);
+   await handler(sock, jid, username, args);
 };
 
 export const handleMessage = async (
-  body: string,
-  username: string,
-  jid: string,
-  sock: WASocket,
+   body: string,
+   username: string,
+   jid: string,
+   sock: WASocket,
 ) => {
-  try {
-    const prefix = body[0];
-    if (!['/', '!', '#', '.'].includes(prefix)) return;
+   try {
+      const prefix = body[0];
+      if (!['/', '!', '#', '.'].includes(prefix)) return;
 
-    const [command, ...args] = body.slice(1).trim().split(/ +/);
+      const [command, ...args] = body.slice(1).trim().split(/ +/);
 
-    const handler = commands[command?.toLowerCase()];
-    if (handler) {
-      await commandMiddleware(sock, jid, command, username, args, handler);
-    } else {
-      await sendMessageWTyping(
-        sock,
-        { text: 'Ketikkan /help untuk melihat commands.' },
-        jid,
-      );
-    }
-  } catch (error) {
-    console.error('Error handling message:', { body, jid, error });
-  }
+      const handler = commands[command?.toLowerCase()];
+      if (handler) {
+         await commandMiddleware(sock, jid, command, username, args, handler);
+      } else {
+         await sendMessageWTyping(
+            sock,
+            { text: 'Ketikkan /help untuk melihat commands.' },
+            jid,
+         );
+      }
+   } catch (error) {
+      console.error('Error handling message:', { body, jid, error });
+   }
 };
