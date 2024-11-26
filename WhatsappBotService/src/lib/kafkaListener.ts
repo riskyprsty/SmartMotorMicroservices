@@ -3,7 +3,7 @@ import { Kafka, EachMessagePayload } from 'kafkajs';
 
 const kafka = new Kafka({
    clientId: 'whatsapp-bot-service',
-   brokers: ['kafka:9092'],
+   brokers: [process.env.KAFKA_BROKER || 'kafka:9093'],
 });
 
 const consumer = kafka.consumer({ groupId: 'whatsapp-bot-group' });

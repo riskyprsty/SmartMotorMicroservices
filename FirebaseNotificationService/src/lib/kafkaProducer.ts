@@ -2,7 +2,7 @@ import { Kafka, Partitioners } from 'kafkajs';
 
 const kafka = new Kafka({
   clientId: 'firebase-notification-service',
-  brokers: ['kafka:9092'],
+  brokers: [process.env.KAFKA_BROKER || 'kafka:9093'],
 });
 
 export const producer = kafka.producer({
