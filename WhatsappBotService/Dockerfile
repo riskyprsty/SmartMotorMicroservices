@@ -1,15 +1,15 @@
 FROM node:20
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml ./
+COPY package.json yarn.lock ./
 
-RUN pnpm install --frozen-lockfile
+RUN yarn install --frozen-lockfile
 
 COPY . .
 
-RUN pnpm run build
+RUN yarn build
 
-CMD ["pnpm", "start"]
+CMD ["yarn", "start"]
