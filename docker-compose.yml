@@ -6,8 +6,6 @@ services:
     environment:
       - NODE_ENV=production
       - KAFKA_BROKER=kafka:9093
-    volumes:
-      - ./FirebaseNotificationService:/app
     depends_on:
       kafka:
         condition: service_healthy
@@ -22,8 +20,6 @@ services:
     environment:
       - NODE_ENV=production
       - KAFKA_BROKER=kafka:9093
-    volumes:
-      - ./WhatsappBotService:/app
     depends_on:
       kafka:
         condition: service_healthy
