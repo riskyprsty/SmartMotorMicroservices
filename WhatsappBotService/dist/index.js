@@ -4,6 +4,8 @@ import { makeWASocket, DisconnectReason, fetchLatestBaileysVersion, getAggregate
 import Proto from '@whiskeysockets/baileys/WAProto/index.js';
 import P from 'pino';
 import { handleMessage } from './handlers/handleMessage.js';
+import { listenToKafkaMessages } from './lib/kafkaListener.js';
+import { handleNotification, } from './handlers/notificationHandler.js';
 const { proto } = Proto;
 const logger = P({ timestamp: () => `,"time":"${new Date().toJSON()}"` }, P.destination('./logs/wa-logs.txt'));
 logger.level = 'trace';
@@ -24,7 +26,7 @@ const startSock = async () => {
     const { state, saveCreds } = await useMultiFileAuthState('auth/baileys_auth_info');
     // fetch latest version of WA Web
     const { version, isLatest } = await fetchLatestBaileysVersion();
-    console.log(`using WA v${version.join('.')}, isLatest: ${isLatest}`);
+    console.log(`[.] [BAILEYS] Using WA v${version.join('.')}, isLatest: ${isLatest}`);
     const sock = makeWASocket({
         version,
         logger,
@@ -65,10 +67,10 @@ const startSock = async () => {
                     startSock();
                 }
                 else {
-                    console.log('Connection closed. You are logged out.');
+                    console.log('[X] [BAILEYS] Connection closed. You are logged out.');
                 }
             }
-            console.log('connection update', update);
+            console.log('[+] [BAILEYS] connection update', update);
         }
         // credentials updated -- save them
         if (events['creds.update']) {
@@ -81,7 +83,7 @@ const startSock = async () => {
             console.log(events['labels.edit']);
         }
         if (events.call) {
-            console.log('recv call event', events.call);
+            console.log('[+] [BAILEYS] recv call event', events.call);
         }
         // history received
         if (events['messaging-history.set']) {
@@ -94,13 +96,13 @@ const startSock = async () => {
         // received a new message
         if (events['messages.upsert']) {
             const upsert = events['messages.upsert'];
-            // console.log('recv messages ', JSON.stringify(upsert, undefined, 2));
+            // console.log('[BAILEYS] recv messages ', JSON.stringify(upsert, undefined, 2));
             if (upsert.type === 'notify') {
                 for (const msg of upsert.messages) {
                     if (!msg.key.fromMe) {
                         const text = msg.message?.conversation ||
                             msg.message?.extendedTextMessage?.text;
-                        console.log('Received message: ', text);
+                        console.log('[+] [BAILEYS] Received message: ', text);
                         if (typeof text === 'string' &&
                             typeof msg.pushName === 'string') {
                             try {
@@ -119,7 +121,9 @@ const startSock = async () => {
             }
         }
         if (events['messages.update']) {
-            console.log(JSON.stringify(events['messages.update'], undefined, 2));
+            // console.log(
+            //    JSON.stringify(events['messages.update'], undefined, 2),
+            // );
             for (const { key, update } of events['messages.update']) {
                 if (update.pollUpdates) {
                     const pollCreation = await getMessage(key);
@@ -132,18 +136,18 @@ const startSock = async () => {
                 }
             }
         }
-        if (events['message-receipt.update']) {
-            console.log(events['message-receipt.update']);
-        }
-        if (events['messages.reaction']) {
-            console.log(events['messages.reaction']);
-        }
-        if (events['presence.update']) {
-            console.log(events['presence.update']);
-        }
-        if (events['chats.update']) {
-            console.log(events['chats.update']);
-        }
+        // if (events['message-receipt.update']) {
+        //    console.log(events['message-receipt.update']);
+        // }
+        // if (events['messages.reaction']) {
+        //    console.log(events['messages.reaction']);
+        // }
+        // if (events['presence.update']) {
+        //    console.log(events['presence.update']);
+        // }
+        // if (events['chats.update']) {
+        //    console.log(events['chats.update']);
+        // }
         if (events['contacts.update']) {
             for (const contact of events['contacts.update']) {
                 if (typeof contact.imgUrl !== 'undefined') {
@@ -157,9 +161,10 @@ const startSock = async () => {
             }
         }
         if (events['chats.delete']) {
-            console.log('chats deleted ', events['chats.delete']);
+            console.log('[-] [BAILEYS] chats deleted ', events['chats.delete']);
         }
     });
+    await listenToKafkaMessages('whatsapp-notifications', (message) => handleNotification(message, sock));
     return sock;
     async function getMessage(key) {
         if (store) {

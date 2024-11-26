@@ -7,12 +7,19 @@ export const listenToSettings = () => {
     const vehicleId = snapshot.key!;
     const settings = snapshot.val();
 
-    console.log(`Ada setting yang diupdate untuk motor ${vehicleId}`, settings);
+    console.log(`[.] Settings updated for vehicle ${vehicleId}`);
 
-    if (settings.enabled) {
-      console.log(`Warning diaktifkan untuk ${vehicleId}`);
-    }
+    Object.keys(settings || {}).forEach((feature) => {
+      const featureSettings = settings[feature];
+
+      if (typeof featureSettings?.enabled !== 'undefined') {
+        const state = featureSettings.enabled ? 'enabled' : 'disabled';
+        console.log(
+          `[NOTIFY] ${feature.toUpperCase()} setting is ${state} for vehicle ${vehicleId}`,
+        );
+      }
+    });
   });
 
-  console.log('Listening ke perubahan setting...');
+  console.log('[+] Listening to settings updates...');
 };

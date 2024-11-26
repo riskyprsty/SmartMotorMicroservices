@@ -16,6 +16,11 @@ import {
 import Proto from '@whiskeysockets/baileys/WAProto/index.js';
 import P from 'pino';
 import { handleMessage } from './handlers/handleMessage.js';
+import { listenToKafkaMessages } from './lib/kafkaListener.js';
+import {
+   NotificationMessage,
+   handleNotification,
+} from './handlers/notificationHandler.js';
 
 const { proto } = Proto;
 
@@ -51,7 +56,9 @@ const startSock = async () => {
    );
    // fetch latest version of WA Web
    const { version, isLatest } = await fetchLatestBaileysVersion();
-   console.log(`using WA v${version.join('.')}, isLatest: ${isLatest}`);
+   console.log(
+      `[.] [BAILEYS] Using WA v${version.join('.')}, isLatest: ${isLatest}`,
+   );
 
    const sock = makeWASocket({
       version,
@@ -97,11 +104,13 @@ const startSock = async () => {
                ) {
                   startSock();
                } else {
-                  console.log('Connection closed. You are logged out.');
+                  console.log(
+                     '[X] [BAILEYS] Connection closed. You are logged out.',
+                  );
                }
             }
 
-            console.log('connection update', update);
+            console.log('[+] [BAILEYS] connection update', update);
          }
 
          // credentials updated -- save them
@@ -118,7 +127,7 @@ const startSock = async () => {
          }
 
          if (events.call) {
-            console.log('recv call event', events.call);
+            console.log('[+] [BAILEYS] recv call event', events.call);
          }
 
          // history received
@@ -140,7 +149,7 @@ const startSock = async () => {
          if (events['messages.upsert']) {
             const upsert = events['messages.upsert'];
 
-            // console.log('recv messages ', JSON.stringify(upsert, undefined, 2));
+            // console.log('[BAILEYS] recv messages ', JSON.stringify(upsert, undefined, 2));
 
             if (upsert.type === 'notify') {
                for (const msg of upsert.messages) {
@@ -149,7 +158,7 @@ const startSock = async () => {
                         msg.message?.conversation ||
                         msg.message?.extendedTextMessage?.text;
 
-                     console.log('Received message: ', text);
+                     console.log('[+] [BAILEYS] Received message: ', text);
 
                      if (
                         typeof text === 'string' &&
@@ -176,9 +185,9 @@ const startSock = async () => {
          }
 
          if (events['messages.update']) {
-            console.log(
-               JSON.stringify(events['messages.update'], undefined, 2),
-            );
+            // console.log(
+            //    JSON.stringify(events['messages.update'], undefined, 2),
+            // );
 
             for (const { key, update } of events['messages.update']) {
                if (update.pollUpdates) {
@@ -196,21 +205,21 @@ const startSock = async () => {
             }
          }
 
-         if (events['message-receipt.update']) {
-            console.log(events['message-receipt.update']);
-         }
+         // if (events['message-receipt.update']) {
+         //    console.log(events['message-receipt.update']);
+         // }
 
-         if (events['messages.reaction']) {
-            console.log(events['messages.reaction']);
-         }
+         // if (events['messages.reaction']) {
+         //    console.log(events['messages.reaction']);
+         // }
 
-         if (events['presence.update']) {
-            console.log(events['presence.update']);
-         }
+         // if (events['presence.update']) {
+         //    console.log(events['presence.update']);
+         // }
 
-         if (events['chats.update']) {
-            console.log(events['chats.update']);
-         }
+         // if (events['chats.update']) {
+         //    console.log(events['chats.update']);
+         // }
 
          if (events['contacts.update']) {
             for (const contact of events['contacts.update']) {
@@ -229,9 +238,14 @@ const startSock = async () => {
          }
 
          if (events['chats.delete']) {
-            console.log('chats deleted ', events['chats.delete']);
+            console.log('[-] [BAILEYS] chats deleted ', events['chats.delete']);
          }
       },
+   );
+
+   await listenToKafkaMessages<NotificationMessage>(
+      'whatsapp-notifications',
+      (message) => handleNotification(message, sock),
    );
 
    return sock;

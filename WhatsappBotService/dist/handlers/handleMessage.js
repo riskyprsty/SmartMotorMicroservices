@@ -1,7 +1,6 @@
 import { sendMessageWTyping } from '../utils/messageUtils.js';
-import { isUserInitialized, initializeUser, getUserVehicleId, } from '../services/firebaseService.js';
-import { formatVehicleLocation, formatVehicleStatusMessage, helpMessage, initializeExampleMessage, successInitializeMessage, unitializedMessage, } from '../messages/messageComposer.js';
-// Command handlers
+import { isUserInitialized, initializeUser, getUserVehicleId, setRadius, setNotify, setSwitch, setNotifInterval, setSecurityMode, } from '../services/firebaseService.js';
+import { formatInfoMessage, formatVehicleLocation, formatVehicleStatusMessage, helpMessage, initializeExampleMessage, intervalExampleMessage, notifyExampleMessage, securityExampleMessage, successInitializeMessage, unitializedMessage, } from '../messages/messageComposer.js';
 const commands = {
     init: async (sock, jid, senderName, args) => {
         const vehicleId = args[0];
@@ -27,12 +26,69 @@ const commands = {
     test: async (sock, jid) => {
         await sendMessageWTyping(sock, { text: 'Hello test!' }, jid);
     },
-    cik: async (sock, jid) => {
-        await sendMessageWTyping(sock, { text: 'Hello cak!' }, jid);
+    on: async (sock, jid) => {
+        const vehicleId = await getUserVehicleId(jid);
+        await sendMessageWTyping(sock, { text: await setSwitch(vehicleId, true) }, jid);
+    },
+    off: async (sock, jid) => {
+        const vehicleId = await getUserVehicleId(jid);
+        await sendMessageWTyping(sock, { text: await setSwitch(vehicleId, false) }, jid);
+    },
+    info: async (sock, jid) => {
+        const vehicleId = await getUserVehicleId(jid);
+        await sendMessageWTyping(sock, { text: await formatInfoMessage(vehicleId) }, jid);
     },
     location: async (sock, jid) => {
         const vehicleId = await getUserVehicleId(jid);
         await sendMessageWTyping(sock, { location: await formatVehicleLocation(vehicleId) }, jid);
+    },
+    notify: async (sock, jid, _, args) => {
+        if (!args[0]) {
+            await sendMessageWTyping(sock, { text: notifyExampleMessage() }, jid);
+            return;
+        }
+        const input = args[0].toLowerCase();
+        if (input !== 'on' && input !== 'off') {
+            await sendMessageWTyping(sock, { text: notifyExampleMessage() }, jid);
+            return;
+        }
+        const vehicleId = await getUserVehicleId(jid);
+        await sendMessageWTyping(sock, { text: await setNotify(vehicleId, input) }, jid);
+    },
+    security: async (sock, jid, _, args) => {
+        if (!args[0]) {
+            await sendMessageWTyping(sock, { text: securityExampleMessage() }, jid);
+            return;
+        }
+        const input = args[0].toLowerCase();
+        if (input !== 'high' && input !== 'normal') {
+            await sendMessageWTyping(sock, { text: securityExampleMessage() }, jid);
+            return;
+        }
+        const vehicleId = await getUserVehicleId(jid);
+        await sendMessageWTyping(sock, { text: await setSecurityMode(vehicleId, input) }, jid);
+    },
+    setradius: async (sock, jid, _, args) => {
+        const vehicleId = await getUserVehicleId(jid);
+        const radius = parseInt(args[0]);
+        if (typeof vehicleId != 'string' && typeof radius != 'number')
+            return;
+        await sendMessageWTyping(sock, {
+            text: await setRadius(vehicleId, radius),
+        }, jid);
+    },
+    setinterval: async (sock, jid, _, args) => {
+        const vehicleId = await getUserVehicleId(jid);
+        const interval = parseInt(args[0]);
+        if (typeof vehicleId != 'string' || typeof interval != 'number') {
+            await sendMessageWTyping(sock, { text: intervalExampleMessage() }, jid);
+            return;
+        }
+        else {
+            await sendMessageWTyping(sock, {
+                text: await setNotifInterval(vehicleId, interval),
+            }, jid);
+        }
     },
     status: async (sock, jid) => {
         const vehicleId = await getUserVehicleId(jid);
@@ -62,7 +118,7 @@ export const handleMessage = async (body, username, jid, sock) => {
             await commandMiddleware(sock, jid, command, username, args, handler);
         }
         else {
-            await sendMessageWTyping(sock, { text: 'Ketikkan /help untuk melihat commands.' }, jid);
+            await sendMessageWTyping(sock, { text: 'Ketikkan */help* untuk melihat commands.' }, jid);
         }
     }
     catch (error) {
