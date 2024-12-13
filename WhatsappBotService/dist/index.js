@@ -30,7 +30,7 @@ const startSock = async () => {
     const sock = makeWASocket({
         version,
         logger,
-        printQRInTerminal: !usePairingCode,
+        printQRInTerminal: true,
         auth: {
             creds: state.creds,
             /** caching makes the store faster to send/recv messages */
